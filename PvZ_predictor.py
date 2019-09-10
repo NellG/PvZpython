@@ -5,26 +5,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
-def diamondbetter(lvlin, win):
-    loss = 1-win
-    lvlout = np.zeros((2,6))
-    downs = np.array([[1,1,0,0,0,0], [0,0,1,0,0,0], [0,0,0,1,0,0], [0,0,0,0,1,0]])
-    ups = np.array([[1,0,0,0,0,0], [0,1,0,0,0,0], [0,0,1,0,0,0], [0,0,0,1,0,0], [0,0,0,0,1,0]])
-    lvlout[0,:4] = loss*np.dot(downs, (lvlin[0,:]+lvlin[1,:]))
-    lvlout[1,1:] = win*np.dot(ups, (lvlin[0,:]+lvlin[1,:]))
-    return lvlout
-
-def diamond(lvl, win):
-    loss = 1-win
-    zero = loss * (lvl[0] + lvl[1])
-    one = loss * lvl[2] + win * lvl[0]
-    two = loss * lvl[3] + win * lvl[1]
-    three = loss * lvl[4] + win * lvl[2]
-    four = win * lvl[3]
-    five = win * lvl[4]
-
-    return [zero, one, two, three, four, five]
-
+# Function to iterate through p-win steps
 def ex_games(cutoff, max, win, league):
     expected = []
 
@@ -52,16 +33,66 @@ def ex_games(cutoff, max, win, league):
 
     return np.array(expected)
 
+# Functions to calculate expected rounds to level up in each league for a given
+# probability of winning
+
+def wood(lvlin, win):
+    loss = 1-win
+    lvlout = np.zeros((2,6))
+    downs = np.array([[1,0,0,0,0,0], [0,1,0,0,0,0], [0,0,1,0,0,0], [0,0,0,1,0,0], [0,0,0,0,1,0], [0,0,0,0,0,0]])
+    ups = np.array([[0,0,0,0,0,0], [0,0,0,0,0,0], [0,0,0,0,0,0], [1,0,0,0,0,0], [0,1,0,0,0,0], [0,0,1,1,1,0]])
+    lvlout[0,:] = loss*np.dot(downs, (lvlin[0,:]+lvlin[1,:]))
+    lvlout[1,:] = win*np.dot(ups, (lvlin[0,:]+lvlin[1,:]))
+    return lvlout
+
+def bronze(lvlin, win):
+    loss = 1-win
+    lvlout = np.zeros((2,6))
+    downs = np.array([[1,0,0,0,0,0], [0,1,0,0,0,0], [0,0,1,0,0,0], [0,0,0,1,0,0], [0,0,0,0,1,0], [0,0,0,0,0,0]])
+    upsl = np.array([[0,0,0,0,0,0], [0,0,0,0,0,0], [1,0,0,0,0,0], [0,1,0,0,0,0], [0,0,1,0,0,0], [0,0,0,1,1,0]])
+    upsw = np.array([[0,0,0,0,0,0], [0,0,0,0,0,0], [0,0,0,0,0,0], [1,0,0,0,0,0], [0,1,0,0,0,0], [0,0,1,1,1,0]])
+    lvlout[0,:] = loss*np.dot(downs, (lvlin[0,:]+lvlin[1,:]))
+    lvlout[1,:] = win*np.dot(upsl, lvlin[0,:]) + win*np.dot(upsw, lvlin[1,:])
+    return lvlout
+
+def gold(lvlin, win):
+    loss = 1-win
+    lvlout = np.zeros((2,6))
+    downs = np.array([[1,1,0,0,0,0], [0,0,1,0,0,0], [0,0,0,1,0,0], [0,0,0,0,1,0], [0,0,0,0,0,0], [0,0,0,0,0,0]])
+    upsl = np.array([[0,0,0,0,0,0], [1,0,0,0,0,0], [0,1,0,0,0,0], [0,0,1,0,0,0], [0,0,0,1,0,0], [0,0,0,0,1,0]])
+    upsw = np.array([[0,0,0,0,0,0], [0,0,0,0,0,0], [1,0,0,0,0,0], [0,1,0,0,0,0], [0,0,1,0,0,0], [0,0,0,1,1,0]])
+    lvlout[0,:] = loss*np.dot(downs, (lvlin[0,:]+lvlin[1,:]))
+    lvlout[1,:] = win*np.dot(upsl, lvlin[0,:]) + win*np.dot(upsw, lvlin[1,:])
+    return lvlout
+
+def diamond(lvlin, win):
+    loss = 1-win
+    lvlout = np.zeros((2,6))
+    downs = np.array([[1,1,0,0,0,0], [0,0,1,0,0,0], [0,0,0,1,0,0], [0,0,0,0,1,0], [0,0,0,0,0,0], [0,0,0,0,0,0]])
+    ups = np.array([[0,0,0,0,0,0], [1,0,0,0,0,0], [0,1,0,0,0,0], [0,0,1,0,0,0], [0,0,0,1,0,0], [0,0,0,0,1,0]])
+    lvlout[0,:] = loss*np.dot(downs, (lvlin[0,:]+lvlin[1,:]))
+    lvlout[1,:] = win*np.dot(ups, (lvlin[0,:]+lvlin[1,:]))
+    return lvlout
+
+# Main code
+
+# Set precision of expectation estimate
 cutoff = 0.0001
 max = 50
 win = np.linspace(0, 1, 101)
 
-ex_diamond = ex_games(cutoff, max, win, diamondbetter)
-offset = ex_diamond-20
+# Calculate expected games for each league
+ex_diamond = ex_games(cutoff, max, win, diamond)
+ex_wood = ex_games(cutoff, max, win, wood)
+ex_bronze = ex_games(cutoff, max, win, bronze)
+ex_gold = ex_games(cutoff, max, win, gold)
 
+# Plot expectations
 fix, ax = plt.subplots()
-ax.plot(win, ex_diamond, color = 'red', label = 'Diamond League')
-ax.plot(win, offset, color = 'blue', label = 'Offset')
+ax.plot(win, ex_wood, color = 'saddlebrown', label = 'Wood League')
+ax.plot(win, ex_bronze, color = 'goldenrod', label = 'Bronze/Silver League')
+ax.plot(win, ex_gold, color = 'gold', label = 'Gold League')
+ax.plot(win, ex_diamond, color = 'skyblue', label = 'Diamond/Taco League')
 ax.set(xlabel = 'Probability of win', ylabel = 'Expected rounds to level up', title = 'Prediction for Each League')
 plt.xlim(0,1)
 plt.ylim(0, 50)
